@@ -106,14 +106,23 @@ define([
     }
 
     var cache = {};
-    var fetchOrGetCached = function ( path, callback ){
-      if ( cache[path] ){
+    var pending = {};
+    var fetchOrGetCached = function (path, callback) {
+      if (cache[path]) {
         callback(cache[path]);
       }
       else {
+        if (pending[path]) {
+          pending[path].push(callback);
+          return;
+        }
+        pending[path] = [callback];
         fetchText(path, function(data){
           cache[path] = data;
-          callback.call(this, data);
+          for (i=0; i < pending[path].length; i++) {
+            pending[path][i].call(this, data);
+          }
+          pending[path] = undefined;
         });
       }
     };
